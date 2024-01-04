@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v{{ kube_x_stream }}.{{ kube_y_stream }}/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ kube_x_stream }}.{{ kube_y_stream }}/rpm/repodata/repomd.xml.key

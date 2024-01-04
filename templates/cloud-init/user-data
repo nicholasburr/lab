@@ -1,0 +1,21 @@
+#cloud-config
+#package_upgrade: true
+users:
+  - name: nburr
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    ssh_pwauth: true
+    ssh_authorized_keys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDD6FlgiWgspWvdWXErmQ0h/p2ENl8pUPlEmUEu+nJqtau2v1uBxAoZlXMQOFDzH0vk3iqgzicyc0iUFvPlVrfzH/qfF7ciJ5uo5bdKEbJPFUdHMXF1/ikjgOmGhdAiuKD3zzJY1FO+MdPV85/2R4O9l/YRsVHLN9kxhlDRJ04ct72GSciJ4aSt89/E+LOKcraHF4iOwixSTRdz+ralTDax18b0walIsZKrAArDhaA9ZNTGVinK4DjLv46tab5whcgV3N1pwFgXj6yGmn3a6EJ670ZWVWJ/Hj/mGcXJcZdXmsCGIIekAj4EDQY13SARCItqOYbmqo/5AZcrf22yLigLM8ZrE+wyS7aruMcugWa/eXICtKr2/vAqrSlaDw6u+CiVTY371/UruoKwI0FQIlXsuMnUtSDTI3tF8MINPzn6c3LgQuoFv96eXzz65UADDnkqbfpRfn8CILD+GNNy7tjUFEzTz29ZzpGLG++u0glHSmbvO4NWfKy3u4+L6i/Ka75r9lD7NlHp5037trG2qieEFZqWG9iPFRrrjXaIPSpcoOb8gEGaEK4iQR9kChLdGoHKJLzUqzAwx+zXpRBWHEeNStOUsC8MBX7OOpL9bsofTqB10VYTrOMLI+XEqxV2pBZ1IJXV3bH9DQRD5foCPo09JVZCvHk47Ls7+R21fDTfpw== nburr@redhat.com
+#runcmd:
+#  - curl --data "host_config_key=ca9a395a-4e83-43e3-b634-ff439e69eeb6" https://awx.example.com:443/api/v2/job_templates/1724/callback/
+#ca-certs:
+#  remove-defaults: false
+#  trusted:
+#  - |
+#   -----END CERTIFICATE-----
+#  - |
+#   -----BEGIN CERTIFICATE-----
+
+#   -----END CERTIFICATE-----
+#

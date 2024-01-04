@@ -1,0 +1,144 @@
+---
+- name: Setup PreRequistits for a Kubernetes Cluster
+  hosts: control_nodes:worker_nodes
+  become: true
+  become_method: sudo
+  pre_tasks:
+    - name: Configure hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+        use: systemd
+
+# Doc: https://v1-27.docs.kubernetes.io/docs/reference/networking/ports-and-protocols/
+    - name: Open firewall ports for Kubernetes
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+
+        port: "{{ item }}"
+      loop: "{{ kubernetes_ports }}"
+
+    - name: Configure Masquerade and Interfaces
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        masquerade: "{{ item.masq | default(omit) }}"
+        interface: "{{ item.interface | default(omit) }}"
+        zone: "{{ item.zone | default(omit) }}"
+      loop:
+        - masq: true
+          zone: public
+        - interface: cni0
+          zone: internal
+        - interface: flannel.1
+          zone: internal
+
+
+# Doc: https://v1-27.docs.kubernetes.io/docs/setup/production-environment/container-runtimes/#forwarding-ipv4-and-letting-iptables-see-bridged-traffic
+    - name: Add the {{ item }} module
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+        persistent: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Let iptables see bridged traffic
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: '1'
+        sysctl_set: true
+        state: present
+        sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+        reload: true
+      loop:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+        - net.ipv4.ip_forward
+
+    - name: Disbale swap
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regex: '\w*swap'
+        state: absent
+      notify: _reboot
+
+# Doc: https://github.com/cri-o/packaging#add-the-kubernetes-repository
+#      https://github.com/cri-o/cri-o/blob/main/install.md#other-yum-based-operating-systems
+    - name: Configrue Kubernetes repositories
+      ansible.builtin.template:
+        src: "templates/etc/yum.repos.d/{{ item }}"
+        dest: "/etc/yum.repos.d/{{ item }}"
+        mode: 0644
+      loop:
+        - cri-o.repo
+        - kubernetes.repo
+
+    - name: Install CRI and Kubernetes packages
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: "{{ package_state | default('present') }}"
+      loop:
+        - container-selinux
+        - cri-o, containernetworking-plugins, kubelet, kubeadm, kubectl
+
+    - name: configure crio
+      ansible.builtin.template:
+        src: "templates{{ item.name }}"
+        dest: "{{ item.name }}"
+        backup: true
+      loop:
+        - name: /etc/cni/net.d/10-crio.conflist
+        - name: /etc/crio/crio.conf.d/01-log-level.conf
+    - name: remove rpm created crio config
+      ansible.builtin.file:
+        path: /etc/cni/net.d/11-crio-ipv4-bridge.conflist
+        state: absent
+
+  tasks:
+    - name: Start and enable CRI and Kubernetes services
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        daemon_reload: true
+        state: started
+        enabled: true
+      loop:
+        - crio
+        - kubelet
+
+#    - name: initalize control plane
+#      ansible.builtin.include_tasks:
+#        file: tasks/initalize_control_plane.yml
+#      when: inventory_hostname in groups["control_nodes"]
+#
+#    - name: initalize cni
+#      ansible.builtin.include_tasks:
+#        file: tasks/initalize_cni.yaml
+#
+#    - name: initalize workers
+#      ansible.builtin.include_tasks:
+#        file: tasks/initalize_workers.yml
+##      when: inventory_hostname in groups["worker_nodes"]    
+#  post_tasks:
+
+
+
+  handlers:
+    - name: _restart_networkmanager
+      ansible.builtin.systemd_service:
+        name: NetworkManager
+        daemon_reload: true
+        state: restarted
+
+    - name: _reboot
+      ansible.builtin.reboot:
+
+    - name: _reload_firewalld
+      ansible.builtin.systemd_service:
+        name: firewalld
+        daemon_reload: true
+        state: reloaded
+        enabled: true

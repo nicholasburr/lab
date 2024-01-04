@@ -1,0 +1,8 @@
+---
+libvirt_guests:
+  - name: control1
+    vcpu: 2
+    memory: 4
+    distro: centos9
+    disk: 100G
+    ip: 192.168.1.21
