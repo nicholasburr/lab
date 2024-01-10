@@ -10,7 +10,6 @@
   register: _named_zone
   notify: _reload_named
 
-
 - name: validate named.conf
   block:
   - name:
@@ -19,6 +18,9 @@
     failed_when: _named_checkzone.rc != 0
     register: _named_checkzone
     when: _named_zone.changed
+
+  - name: reload named
+    meta: flush_handlers
 
   rescue:
   - name: restore /etc/named.conf

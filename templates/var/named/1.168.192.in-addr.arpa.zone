@@ -1,6 +1,6 @@
 $TTL 604800
 @       IN      SOA      lab.nicholasburr.com. ns1.lab.nicholasburr.com (
-                         1              ; Serial Note: increment after each change
+                         2              ; Serial Note: increment after each change
                          604800         ; Refresh
                           86400         ; Retry
                         2419200         ; Expire
@@ -9,8 +9,9 @@ $TTL 604800
 
 ns1      IN      A       192.168.1.21
 
-2   IN      PTR     virt1.lab.nicholasburr.com.
-3   IN      PTR     aio-cluster1.lab.nicholasburr.com.
-4   IN      PTR     aio-cluster2.lab.nicholasburr.com.
-5   IN      PTR     aio-cluster3.lab.nicholasburr.com.
-21   IN      PTR     ns1.lab.nicholasburr.com.
+2    IN      PTR      virt1.lab.nicholasburr.com.
+3    IN      PTR      aio-cluster1.lab.nicholasburr.com.
+4    IN      PTR      aio-cluster2.lab.nicholasburr.com.
+5    IN      PTR      aio-cluster3.lab.nicholasburr.com.
+21   IN      PTR      ns1.lab.nicholasburr.com.
+31   IN      PTR      keycloak.lab.nicholasburr.com.

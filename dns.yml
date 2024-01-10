@@ -40,6 +40,9 @@
       register: _named_checkconf
       when: _named_conf.changed
 
+    - name: reload named
+      meta: flush_handlers
+
     rescue:
     - name: restore /etc/named.conf
       ansible.builtin.copy:
