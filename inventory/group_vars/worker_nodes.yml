@@ -1,9 +1,9 @@
 ---
 kubernetes_ports:
-  - 10250/tcp
-  - 30000-32767/tcp
+  - port: 10250/tcp
+  - port: 30000-32767/tcp
 # Doc: https://github.com/flannel-io/flannel/blob/master/Documentation/troubleshooting.md#firewalls
-  - 8472/udp
+  - port: 8472/udp
 # Doc: https://metallb.universe.tf/#requirements
-  - 7946/tcp
-  - 7946/udp
+  - port: 7946/tcp
+  - port: 7946/udp

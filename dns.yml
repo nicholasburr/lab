@@ -1,0 +1,66 @@
+---
+- name: configure hypervisor
+  become: true
+  become_method: sudo
+  hosts: dns
+  pre_tasks:
+  - name: install bind packages
+    ansible.builtin.dnf:
+      name: [ 'bind',
+              'bind-utils'
+            ]
+      state: present
+
+  - name: configure bind service
+    ansible.builtin.systemd_service:
+      name: named
+      daemon_reload: true
+      state: started
+      enabled: true
+
+  tasks:
+  - name: configure named.conf
+    ansible.builtin.template:
+      src: templates/etc/named.conf
+      dest: /etc/named.conf
+      mode: 0640
+      owner: root
+      group: named
+      backup: true
+    register: _named_conf
+    notify: _reload_named
+
+
+  - name: validate named.conf
+    block:
+    - name:
+      ansible.builtin.command:
+        cmd: "named-checkconf {{ _named_conf.dest }}"
+      changed_when: false
+      failed_when: _named_checkconf.rc != 0
+      register: _named_checkconf
+      when: _named_conf.changed
+
+    rescue:
+    - name: restore /etc/named.conf
+      ansible.builtin.copy:
+        src: "{{ _named_conf.backup_file }}"
+        dest: "{{ _named_conf.dest }}"
+        remote_src: yes
+    - name: /etc/named.conf is invlaid.
+      fail: 
+        msg: "named.conf is not valid - {{ _named_checkconf.stdout }}"
+
+  - name: flush handlers
+    meta: flush_handlers
+
+  - name: configure named zone
+    ansible.builtin.include_tasks:
+      file: tasks/configure_dns_zones.yml
+    loop: "{{ dns_zones }}"
+
+  handlers:
+  - name: _reload_named
+    ansible.builtin.systemd_service:
+      name: named
+      state: reloaded

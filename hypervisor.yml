@@ -4,10 +4,10 @@
   become_method: sudo
   hosts: hypervisors
   pre_tasks:
-    - name: Configure hostname
-      ansible.builtin.hostname:
-        name: "{{ inventory_hostname }}"
-        use: systemd
+  - name: Configure hostname
+    ansible.builtin.hostname:
+      name: "{{ inventory_hostname }}"
+      use: systemd
 
   tasks:
   - name: install packages
@@ -45,6 +45,8 @@
     loop: "{{ libvirt_guests }}"
     loop_control:
       label: "{{ item.name }}"
+    tags:
+    - guests
 
   handlers:
   - name: restart_libvirt

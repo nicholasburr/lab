@@ -1,0 +1,8 @@
+---
+kubernetes_pod_network_cidr: 10.244.0.0/16
+kubernetes_release: "{{ kubernetes_x_stream }}.{{ kubernetes_y_stream }}"
+kubernetes_x_stream: 1
+kubernetes_y_stream: 28
+kubernetes_z_stream: 5
+
+flannel_version: 0.22.3

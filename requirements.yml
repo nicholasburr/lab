@@ -1,15 +1,15 @@
 ---
 collections:
-  - name: ansible.posix
-    version: 1.5.4
-  
-  - name: community.general
-    version: 8.0.2
-  
-  - name: kubernetes.core
-    version: 3.0.0
+- name: ansible.posix
+  version: 1.5.4
 
-  - name: containers.podman
+- name: community.general
+  version: 8.0.2
+
+- name: kubernetes.core
+  version: 3.0.0
+
+- name: containers.podman
 
 roles:
-  - src: https://github.com/alvistack/ansible-role-cri_o.git
+- src: https://github.com/alvistack/ansible-role-cri_o.git

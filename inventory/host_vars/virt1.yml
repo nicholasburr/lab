@@ -1,8 +1,8 @@
 ---
 libvirt_guests:
-  - name: control1
-    vcpu: 2
-    memory: 4
+  - name: ns1
+    vcpu: 1
+    memory: 2
     distro: centos9
-    disk: 100G
+    disk: 20G
     ip: 192.168.1.21

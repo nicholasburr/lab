@@ -1,7 +1,0 @@
----
-kube_x_stream: 1
-kube_y_stream: 28
-kube_z_stream: 2
-kube_release: "{{ kube_x_stream }}.{{ kube_y_stream }}"
-kubernetes_pod_network_cidr: 10.244.0.0/16
-flannel_cni_version: 0.22.3
