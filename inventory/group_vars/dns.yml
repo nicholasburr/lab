@@ -1,3 +1,6 @@
 ---
 dns_zones:
 - zone: lab.nicholasburr.com
+  type: forward
+- zone: 1.168.192.in-addr.arpa
+  type: reverse

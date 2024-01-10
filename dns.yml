@@ -30,7 +30,6 @@
     register: _named_conf
     notify: _reload_named
 
-
   - name: validate named.conf
     block:
     - name:
