@@ -1,0 +1,3 @@
+/opt/nfs/{{ item.name }} 192.168.1.3/32(rw)
+/opt/nfs/{{ item.name }} 192.168.1.4/32(rw)
+/opt/nfs/{{ item.name }} 192.168.1.5/32(rw)

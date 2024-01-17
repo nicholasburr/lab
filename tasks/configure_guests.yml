@@ -1,75 +1,96 @@
 ---
-- name: Generate user-data cloud-init files - {{ item.name }}
-  ansible.builtin.template:
-    src: templates/cloud-init/user-data
-    dest: /var/lib/libvirt/boot/user-data
-  register: _user_data
-
-- name: Generate meta-data cloud-init files - {{ item.name }}
-  ansible.builtin.template:
-    src: templates/cloud-init/meta-data
-    dest: /var/lib/libvirt/boot/meta-data
-  register: _meta_data
-
-- name: Generate network-data cloud-init files - {{ item.name }}
-  ansible.builtin.template:
-    src: templates/cloud-init/network-config
-    dest: /var/lib/libvirt/boot/network-config
-  register: _network_data
-
-- name: Build iso image - {{ item.name }}
-  command: genisoimage -o {{ item.name }}.iso -volid cidata -joliet -rock user-data meta-data network-config
-  args:
-    chdir: /var/lib/libvirt/boot/
-#  when: _user_data is changed or _meta_data is changed or _network_data is changed
-
 - block:
-  - name: verify vm is running - {{ item.name }}
+  - name: start vm - {{ item.name }}
     community.libvirt.virt:
       name: "{{ item.name }}"
       state: running
-    register: guest_status
-
+      uri: qemu:///system
+    tags:
+    - guests
   rescue:
-
+  - name: Generate user-data cloud-init files - {{ item.name }}
+    ansible.builtin.template:
+      src: templates/cloud-init/user-data
+      dest: /var/lib/libvirt/boot/user-data
+    register: _user_data
+    tags:
+    - guests
+  - name: Generate meta-data cloud-init files - {{ item.name }}
+    ansible.builtin.template:
+      src: templates/cloud-init/meta-data
+      dest: /var/lib/libvirt/boot/meta-data
+    register: _meta_data
+    tags:
+    - guests
+  - name: Generate network-data cloud-init files - {{ item.name }}
+    ansible.builtin.template:
+      src: templates/cloud-init/network-config
+      dest: /var/lib/libvirt/boot/network-config
+    register: _network_datad
+    tags:
+    - guests
+  - name: Build iso image - {{ item.name }}
+    command: genisoimage -o {{ item.name }}.iso -volid cidata -joliet -rock user-data meta-data network-config
+    args:
+      chdir: /var/lib/libvirt/boot/
+    when: _user_data.changed or _meta_data.changed or _network_data.changed
+    tags:
+    - guests
   - block:
-    - name: Check if {{ item.distro }} qcow2 exists - {{ item.name }}
-      ansible.builtin.stat:
-        path: "/var/lib/libvirt/images/{{ item.name }}.qcow2"
-      register: guest_backing_disk
-      changed_when: no
-      failed_when: guest_backing_disk.stat.exists is false
-
+    - name: verify vm is running - {{ item.name }}
+      community.libvirt.virt:
+        name: "{{ item.name }}"
+        state: running
+      register: guest_status
+    tags:
+    - guests
     rescue:
-
-      - block:
-        - name: Check if backing qcow2 exists - {{ item.name }}
-          ansible.builtin.stat:
-            path: "/var/lib/libvirt/boot/{{ item.distro }}.qcow2"
-          register: guest_backing_image
-          changed_when: no
-          failed_when: guest_backing_image.stat.exists is false
-
-        rescue:
-          - name: Download backing image(s) - {{ item.name }}
-            get_url:
-              url: https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
-              dest: /var/lib/libvirt/boot/{{ item.distro }}.qcow2
-
-      - name: Create qcow2 for guests - {{ item.name }}
-        command: qemu-img create -f qcow2 -F qcow2 -b /var/lib/libvirt/boot/{{ item.distro }}.qcow2 /var/lib/libvirt/images/{{ item.name }}.qcow2 {{ item.disk }}
-        args:
-          creates: /var/lib/libvirt/images/{{ item.name }}.qcow2
-
-    always:
-      - name: Define vm - {{ item.name }}
-        virt:
-          command: define
-          xml: "{{ lookup('template', 'templates/cloud-init/libvirt_guests.xml') }}"
-          autostart: yes
-          uri: qemu:///system
-      - name: start vm - {{ item.name }}
-        virt:
-          name: "{{ item.name }}"
-          state: running
-          uri: qemu:///system
+    - block:
+      - name: Check if {{ item.distro }} qcow2 exists - {{ item.name }}
+        ansible.builtin.stat:
+          path: "/var/lib/libvirt/images/{{ item.name }}.qcow2"
+        register: guest_backing_disk
+        changed_when: no
+        failed_when: guest_backing_disk.stat.exists is false
+        tags:
+        - guests
+      rescue:
+        - block:
+          - name: Check if backing qcow2 exists - {{ item.name }}
+            ansible.builtin.stat:
+              path: "/var/lib/libvirt/boot/{{ item.distro }}.qcow2"
+            register: guest_backing_image
+            changed_when: no
+            failed_when: guest_backing_image.stat.exists is false
+            tags:
+            - guests
+          rescue:
+            - name: Download backing image(s) - {{ item.name }}
+              get_url:
+                url: https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
+                dest: /var/lib/libvirt/boot/{{ item.distro }}.qcow2
+              tags:
+              - guests
+        - name: Create qcow2 for guests - {{ item.name }}
+          command: qemu-img create -f qcow2 -F qcow2 -b /var/lib/libvirt/boot/{{ item.distro }}.qcow2 /var/lib/libvirt/images/{{ item.name }}.qcow2 {{ item.disk }}
+          args:
+            creates: /var/lib/libvirt/images/{{ item.name }}.qcow2
+          tags:
+          - guests
+      always:
+        - name: Define vm - {{ item.name }}
+          community.libvirt.virt:
+            command: define
+            xml: "{{ lookup('template', 'templates/cloud-init/libvirt_guests.xml') }}"
+            autostart: yes
+            uri: qemu:///system
+          tags:
+          - guests
+    
+        - name: start vm - {{ item.name }}
+          community.libvirt.virt:
+            name: "{{ item.name }}"
+            state: running
+            uri: qemu:///system
+          tags:
+          - guests

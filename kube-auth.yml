@@ -1,0 +1,127 @@
+---
+- name: Generate CSR
+  hosts: control_nodes
+  become: true
+  become_method: sudo
+  vars:
+    kube_config_path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/certs/"
+    kubernetes_groups: cluster-admin
+    kubernetes_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
+
+  pre_tasks:
+  - name: install prerequist packages
+    ansible.builtin.dnf:
+      name: python3-pip
+      state: present
+
+  - name: install python requirements
+    ansible.builtin.pip:
+      name:
+      - kubernetes>=12.0.0
+      - requests-oauthlib
+      - jsonpatch
+
+  - name: "Create {{ kube_config_path }}"
+    file:
+      path: "{{ kube_config_path }}"
+      state: directory
+
+  - name: Generate SSL Private Key
+    become: false
+    connection: local
+    delegate_to: localhost
+    run_once: true
+    community.crypto.openssl_privatekey:
+      path: "{{ kube_config_path }}/{{ kubernetes_user }}.key"
+      size: 2048
+      
+  - name: Generate SSL CSR
+    become: false
+    connection: local
+    delegate_to: localhost
+    run_once: true
+    community.crypto.openssl_csr:
+      path: "{{ kube_config_path }}/{{ kubernetes_user }}.csr"
+      privatekey_path: "{{ kube_config_path }}/{{ kubernetes_user }}.key"
+      common_name: "{{ kubernetes_user }}"
+      organization_name: "{{ kubernetes_groups }}"
+    register: _user_csr
+
+  tasks:
+# - Check for key + csr change
+# - Check for existing secret on cluster
+# - fail into creating cert + secret.
+  - name: Get {{ kubernetes_user }} certificate from kube-auth/secrets.
+    block:
+    - name: Check for {{ kubernetes_user }} in kube-auth/secrets
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: "{{ kubernetes_user }}"
+        kubeconfig: /etc/kubernetes/admin.conf
+      register: _kubernetes_user_secret_info
+
+  - name: create CSR for {{ kubernetes_user }} on {{ inventory_hostname }}
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'manifests/kube-auth-csr.yaml') }}"
+      kubeconfig: /etc/kubernetes/admin.conf
+      state: present
+      wait: yes
+      wait_sleep: 10
+      wait_timeout: 600
+      wait_condition:
+        status: Unknown
+    register: _kubernetes_user_csr
+
+  - name: Approve CSR for {{ kubernetes_user }} on {{ inventory_hostname }}
+    become: false
+    ansible.builtin.command: "kubectl certificate approve {{ kubernetes_user }}"
+
+  - name: Check CSR for {{ kubernetes_user }} on {{ inventory_hostname }}
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: CertificateSigningRequest
+      name: "{{ kubernetes_user }}"
+      kubeconfig: /etc/kubernetes/admin.conf
+    register: _kubernetes_user_csr_info
+
+  - name: fetch data from /etc/kubernetes/admin.conf
+    ansible.builtin.slurp:
+      src: /etc/kubernetes/admin.conf
+    register: _kubernetes_config
+
+  - name: set _admin_conf data
+    ansible.builtin.set_fact:
+      _admin_conf: "{{ _kubernetes_config.content | b64decode | from_yaml }}"
+  - debug:
+      var: _admin_conf
+  - name: set admin_conf_cluster data
+    ansible.builtin.set_fact:
+      _admin_conf_cluster: "{{ _admin_conf.clusters[0].cluster }}"
+  - debug:
+      var: _admin_conf_cluster
+  - name: "Create {{ kube_config_path }}{{ kubernetes_user }}-{{ inventory_hostname }}.crt"
+    connection: local
+    become: false
+    delegate_to: localhost
+    ansible.builtin.copy:
+      dest: "{{ kube_config_path }}{{ kubernetes_user }}-{{ inventory_hostname }}.crt"
+      content: "{{  _kubernetes_user_csr_info.resources[0].status.certificate | b64decode }}"
+
+  - name: "Create {{ kube_config_path }}.kube/config"
+    connection: local
+    become: false
+    delegate_to: localhost
+    run_once: true
+    ansible.builtin.template:
+      src: .kube/config
+      dest: ~/.kube/config
+
+  - name: create kube-auth namespace
+    kubernetes.core.k8s:
+      definition: "{{ item }}"
+      kubeconfig: /etc/kubernetes/admin.conf
+      state: present
+    loop:
+    - "{{ lookup('template', 'manifests/kube-auth-ns.yaml') }}"
+    - "{{ lookup('template', 'manifests/kube-auth-secret.yaml') }}"

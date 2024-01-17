@@ -30,9 +30,9 @@
     - masq: true
       zone: public
     - interface: cni0
-      zone: internal
+      zone: public
     - interface: flannel.1
-      zone: internal
+      zone: public
 
 # Doc: https://v1-27.docs.kubernetes.io/docs/setup/production-environment/container-runtimes/#forwarding-ipv4-and-letting-iptables-see-bridged-traffic
   - name: Add the {{ item }} module
@@ -91,6 +91,7 @@
     loop:
     - name: /etc/cni/net.d/10-crio.conflist
     - name: /etc/crio/crio.conf.d/01-log-level.conf
+
   - name: remove rpm created crio config
     ansible.builtin.file:
       path: /etc/cni/net.d/11-crio-ipv4-bridge.conflist
@@ -121,8 +122,6 @@
 #        file: tasks/initalize_workers.yml
 ##      when: inventory_hostname in groups["worker_nodes"]    
 #  post_tasks:
-
-
 
   handlers:
   - name: _restart_networkmanager

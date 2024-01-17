@@ -1,0 +1,45 @@
+---
+- name: configure nfs server
+  become: true
+  become_method: sudo
+  hosts: nfs
+  pre_tasks:
+  - name: install nfs packages
+    ansible.builtin.dnf:
+      name: [ 'nfs-utils'
+            ]
+      state: present
+
+  - name: configure nfs service(s)
+    ansible.builtin.systemd_service:
+      name: "{{ item }}"
+      daemon_reload: true
+      state: started
+      enabled: true
+    loop:
+    - nfs-server
+    - rpcbind
+  
+  - name: create nfs export directories
+    ansible.builtin.file:
+      path: "/opt/nfs/{{ item.name }}"
+      state: directory
+      mode: 0777
+    loop: "{{ nfs_exports }}"
+  
+  - name: configure /etc/exports
+    ansible.builtin.template:
+      src: templates/etc/exports
+      dest: /etc/exports
+    loop: "{{ nfs_exports }}"
+    notify: _exportfs_r
+
+  handlers:
+  - name: _exportfs_r
+    ansible.builtin.command:
+      cmd: exportfs -r
+
+  - name: _reload_nfs_server
+    ansible.builtin.systemd_service:
+      name: nfs-server
+      state: reloaded

@@ -1,0 +1,12 @@
+---
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: {{ kubernetes_user }}
+spec:
+  groups:
+  - system:authenticated
+  request: {{ lookup('ansible.builtin.file', _user_csr.filename) | ansible.builtin.b64encode }}
+  signerName: kubernetes.io/kube-apiserver-client
+  usages:
+  - client auth

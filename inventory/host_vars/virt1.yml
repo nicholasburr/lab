@@ -6,3 +6,9 @@ libvirt_guests:
     distro: centos9
     disk: 20G
     ip: 192.168.1.21
+  - name: nfs
+    vcpu: 1
+    memory: 2
+    distro: centos9
+    disk: 200G
+    ip: 192.168.1.22
