@@ -1,0 +1,26 @@
+---
+- block:
+  - fail:
+      msg: no guests are defined in the inventory.
+    when: libvirt_guests is undefined
+
+  - fail:
+      msg: "{{ item }} is not defined in Ansible and will be removed."
+    when: item not in libvirt_guests|to_nice_json
+
+  rescue:
+# Does not support --remove-all-storage
+    - name: detroy guest - {{ item }}
+      virt:
+        command: undefine
+        name: "{{ item }}"
+        state: destroyed
+    - name: delete guest - {{ item }}
+      command: 'virsh undefine --nvram {{ item }}'
+    - name: remove backing storage - {{ item }}
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/libvirt/boot/{{ item }}.iso
+        - /var/lib/libvirt/images/{{ item }}.qcow2

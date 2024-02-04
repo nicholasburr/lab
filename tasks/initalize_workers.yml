@@ -1,0 +1,33 @@
+---
+- name: get join command
+  ansible.builtin.command: kubeadm token create --print-join-command
+  changed_when: false
+  register: kubernetes_join_command_result
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['control_nodes'] }}"
+  tags:
+    - always
+
+- debug: 
+    var: kubernetes_join_command_result
+
+- name: set join command to all machines
+  ansible.builtin.set_fact:
+    kubernetes_join_command: "{{ kubernetes_join_command_result.stdout }}"
+    cachable: true
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ groups['all'] }}"
+
+- name: join worker machine
+  ansible.builtin.command: "{{ kubernetes_join_command_result.stdout }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+# This 'creates' arg does not accept a list; these file(s) are what kubeadm is  checking for
+#    - /etc/kubernetes/kubelet.conf
+#    - /etc/kubernetes/pki/ca.crt
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['worker_nodes'] }}"
+
+# kubectl taint node <master-node> node-role.kubernetes.io/control-plane:NoSchedule- 
+# when: inventory_hostname in groups[control_plane]

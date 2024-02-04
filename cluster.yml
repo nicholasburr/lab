@@ -9,13 +9,27 @@
       name: "{{ inventory_hostname }}"
       use: systemd
 
+  - name: install Ansible required packages
+    ansible.builtin.dnf:
+      name: 
+        - python3-pip
+        - git
+      state: present
+
+  - name: install python requirements
+    ansible.builtin.pip:
+      name:
+      - kubernetes>=12.0.0
+      - requests-oauthlib
+      - jsonpatch
+
 # Doc: https://v1-27.docs.kubernetes.io/docs/reference/networking/ports-and-protocols/
   - name: Open firewall ports for Kubernetes
     ansible.posix.firewalld:
       state: enabled
       permanent: true
       immediate: true
-      port: "{{ item.port | default(omit)}}"
+      port: "{{ item.port }}"
     loop: "{{ kubernetes_ports }}"
 
   - name: Configure Masquerade and Interfaces
@@ -112,10 +126,6 @@
     ansible.builtin.include_tasks:
       file: tasks/initalize_control_plane.yml
     when: inventory_hostname in groups["control_nodes"]
-#
-#    - name: initalize cni
-#      ansible.builtin.include_tasks:
-#        file: tasks/initalize_cni.yaml
 #
 #    - name: initalize workers
 #      ansible.builtin.include_tasks:

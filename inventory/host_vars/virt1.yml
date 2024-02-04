@@ -1,14 +1,20 @@
 ---
 libvirt_guests:
-  - name: ns1
-    vcpu: 1
-    memory: 2
-    distro: centos9
-    disk: 20G
-    ip: 192.168.1.21
-  - name: nfs
-    vcpu: 1
-    memory: 2
-    distro: centos9
-    disk: 200G
-    ip: 192.168.1.22
+- name: ns1
+  vcpu: 1
+  memory: 2
+  distro: centos9
+  disk: 20G
+  ip: 192.168.1.21
+- name: nfs
+  vcpu: 1
+  memory: 2
+  distro: centos9
+  disk: 200G
+  ip: 192.168.1.22
+- name: ocm-cluster1
+  vcpu: 4
+  memory: 8
+  distro: centos9
+  disk: 100G
+  ip: 192.168.1.23

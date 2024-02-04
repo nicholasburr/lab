@@ -7,20 +7,7 @@
     kube_config_path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/certs/"
     kubernetes_groups: cluster-admin
     kubernetes_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
-
   pre_tasks:
-  - name: install prerequist packages
-    ansible.builtin.dnf:
-      name: python3-pip
-      state: present
-
-  - name: install python requirements
-    ansible.builtin.pip:
-      name:
-      - kubernetes>=12.0.0
-      - requests-oauthlib
-      - jsonpatch
-
   - name: "Create {{ kube_config_path }}"
     file:
       path: "{{ kube_config_path }}"
@@ -74,8 +61,8 @@
     register: _kubernetes_user_csr
 
   - name: Approve CSR for {{ kubernetes_user }} on {{ inventory_hostname }}
-    become: false
-    ansible.builtin.command: "kubectl certificate approve {{ kubernetes_user }}"
+    become: true
+    ansible.builtin.command: "kubectl --kubeconfig /etc/kubernetes/admin.conf certificate approve {{ kubernetes_user }}"
 
   - name: Check CSR for {{ kubernetes_user }} on {{ inventory_hostname }}
     kubernetes.core.k8s_info:
@@ -125,3 +112,4 @@
     loop:
     - "{{ lookup('template', 'manifests/kube-auth-ns.yaml') }}"
     - "{{ lookup('template', 'manifests/kube-auth-secret.yaml') }}"
+    - "{{ lookup('template', 'manifests/kube-auth-rbac.yaml') }}"

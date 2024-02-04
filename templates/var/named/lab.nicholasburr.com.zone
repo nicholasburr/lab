@@ -1,6 +1,6 @@
 $TTL 604800
 @       IN      SOA     nicholasburr.com. lab.nicholasburr.com. (
-                         10              ; Serial Note: increment after each change
+                         12              ; Serial Note: increment after each change
                          604800         ; Refresh
                           86400         ; Retry
                         2419200         ; Expire
@@ -10,15 +10,14 @@ $TTL 604800
 
 
 virt1                  IN A         192.168.1.2
-aio-cluster1           IN A         192.168.1.3
-aio-cluster2           IN A         192.168.1.4
-aio-cluster3           IN A         192.168.1.5
 ns1                    IN A         192.168.1.21
 nfs                    IN A         192.168.1.22
-ocm-cluster1           IN A         192.168.1.23
-aio-cluster1-ingress   IN A         192.168.1.30
+aio-cluster1           IN A         192.168.1.30
+aio-cluster1-ingress   IN A         192.168.1.31
 *.aio-cluster1         IN CNAME     aio-cluster1-ingress.lab.nicholasburr.com.
-aio-cluster2-ingress   IN A         192.168.1.40
+aio-cluster2           IN A         192.168.1.40
+aio-cluster2-ingress   IN A         192.168.1.41
 *.aio-cluster2         IN CNAME     aio-cluster2-ingress.lab.nicholasburr.com.
-aio-cluster3-ingress   IN A         192.168.1.50
+aio-cluster3           IN A         192.168.1.50
+aio-cluster3-ingress   IN A         192.168.1.51
 *.aio-cluster3         IN CNAME     aio-cluster3-ingress.lab.nicholasburr.com.
